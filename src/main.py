@@ -19,6 +19,10 @@ else:
     success, frame = video.read()
     if success ==True: 
         cv2.imshow("First frame", frame)
+        
+        print(type(frame))
+        print(frame.shape)
+        print(frame[100, 200])
         cv2.waitKey(0)
     else:
         print("Could not read the first frame")
