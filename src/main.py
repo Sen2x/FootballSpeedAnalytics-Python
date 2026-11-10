@@ -16,7 +16,14 @@ else:
     print("Width:", width)
     print("Height:", height)
     print("Frames:", frames)
-    success, frame = video.read()
+    while True:
+        success, frame = video.read()
+
+        if not success:
+            break
+
+        cv2.imshow("Video", frame)
+        cv2.waitKey(33)
     if success ==True: 
         cv2.imshow("First frame", frame)
         
