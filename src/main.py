@@ -13,6 +13,7 @@ else:
     print("Frames:", video.get(cv2.CAP_PROP_FRAME_COUNT))
 
     firstFrame = True
+    frame_number = 0
 
     while True:
         success, frame = video.read()
@@ -29,8 +30,18 @@ else:
             firstFrame = False
 
         cv2.imshow("Video", frame)
+        cv2.putText(
+            frame,
+            f"Frame {frame_number}",
+            (30, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2,
+        )
         if cv2.waitKey(33) == ord("w"):
             break
+        frame_number += 1
 
 video.release()
 cv2.destroyAllWindows()
