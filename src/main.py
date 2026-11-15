@@ -1,47 +1,109 @@
+
 import cv2
+import os
+from ultralytics import YOLO
 
 video_path = "videos/match.mp4"
+output_path = "output/players_detected.mp4"
+
+os.makedirs("output", exist_ok=True)
+
 video = cv2.VideoCapture(video_path)
+model = YOLO("yolo26n.pt")
 
 if not video.isOpened():
     print("Could not open video")
+
 else:
-    print("Video opened successfully")
-    print("FPS:", video.get(cv2.CAP_PROP_FPS))
-    print("Width:", video.get(cv2.CAP_PROP_FRAME_WIDTH))
-    print("Height:", video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print("Frames:", video.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = video.get(cv2.CAP_PROP_FPS)
+    width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    firstFrame = True
-    frame_number = 0
+    if fps <= 0:
+        fps = 30
 
-    while True:
-        success, frame = video.read()
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
-        if not success:
-            if firstFrame:
-                print("Could not read the first frame")
-            break
+    writer = cv2.VideoWriter(
+        output_path,
+        fourcc,
+        fps,
+        (width, height)
+    )
 
-        if firstFrame:
-            print(type(frame))
-            print(frame.shape)
-            print(frame[100, 200])
-            firstFrame = False
+    if not writer.isOpened():
+        print("Could not create output video")
 
-        cv2.imshow("Video", frame)
-        cv2.putText(
-            frame,
-            f"Frame {frame_number}",
-            (30, 50),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 255, 0),
-            2,
-        )
-        if cv2.waitKey(33) == ord("w"):
-            break
-        frame_number += 1
+    else:
+        frame_number = 0
+
+        while True:
+            success, frame = video.read()
+
+            if not success:
+                break
+
+            results = model.track(
+                frame,
+                persist=True,
+                tracker="bytetrack.yaml",
+                classes=[0],
+                conf=0.35,
+                verbose=False
+            )
+
+            annotated_frame = results[0].plot()
+
+            boxes = results[0].boxes
+
+            if boxes is not None and boxes.id is not None:
+
+                player_ids = boxes.id.int().cpu().tolist()
+                coordinates = boxes.xyxy.cpu().numpy()
+
+                for player_id, box in zip(player_ids, coordinates):
+                    x1, y1, x2, y2 = box
+
+                    center_x = int((x1 + x2) / 2)
+                    bottom_y = int(y2)
+
+                    print(
+                        f"Player {player_id}: "
+                        f"x={center_x}, y={bottom_y}"
+                    )
+
+                    cv2.circle(
+                        annotated_frame,
+                        (center_x, bottom_y),
+                        5,
+                        (0, 0, 255),
+                        -1
+                    )
+
+
+            people_count = len(results[0].boxes)
+
+            cv2.putText(
+                annotated_frame,
+                f"People detected: {people_count}",
+                (30, 50),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 255, 0),
+                2
+            )
+
+            writer.write(annotated_frame)
+
+            cv2.imshow("Football Analytics", annotated_frame)
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+            frame_number += 1
+
+        writer.release()
+        print("Video saved:", output_path)
 
 video.release()
 cv2.destroyAllWindows()
