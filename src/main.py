@@ -2,14 +2,14 @@
 import cv2
 import os
 from ultralytics import YOLO
-
+from collections import defaultdict, deque
 video_path = "videos/match.mp4"
 output_path = "output/players_detected.mp4"
 
 os.makedirs("output", exist_ok=True)
 
 video = cv2.VideoCapture(video_path)
-model = YOLO("yolo26n.pt")
+model = YOLO("yolo26s.pt")
 
 if not video.isOpened():
     print("Could not open video")
@@ -36,7 +36,7 @@ else:
 
     else:
         frame_number = 0
-
+        track_history = defaultdict(lambda: deque(maxlen=60))
         while True:
             success, frame = video.read()
 
@@ -46,11 +46,13 @@ else:
             results = model.track(
                 frame,
                 persist=True,
-                tracker="bytetrack.yaml",
+                tracker="botsort.yaml",
                 classes=[0],
-                conf=0.35,
+                conf=0.20,
+                imgsz=960,
                 verbose=False
             )
+
 
             annotated_frame = results[0].plot()
 
@@ -61,17 +63,33 @@ else:
                 player_ids = boxes.id.int().cpu().tolist()
                 coordinates = boxes.xyxy.cpu().numpy()
 
+
                 for player_id, box in zip(player_ids, coordinates):
+
+                    # 1. Get player coordinates
                     x1, y1, x2, y2 = box
 
                     center_x = int((x1 + x2) / 2)
                     bottom_y = int(y2)
 
-                    print(
-                        f"Player {player_id}: "
-                        f"x={center_x}, y={bottom_y}"
-                    )
+                    # 2. Save position to history
+                    history = track_history[player_id]
+                    history.append((center_x, bottom_y))
 
+                    # 3. Draw player trajectory
+                    for i in range(1, len(history)):
+                        previous_point = history[i - 1]
+                        current_point = history[i]
+
+                        cv2.line(
+                            annotated_frame,
+                            previous_point,
+                            current_point,
+                            (0, 255, 255),
+                            2
+                        )
+
+                    # 4. Draw current position
                     cv2.circle(
                         annotated_frame,
                         (center_x, bottom_y),
@@ -80,8 +98,16 @@ else:
                         -1
                     )
 
+                    # 5. Print coordinates
+                    if frame_number % 30 == 0:
+                        print(
+                            f"Player {player_id}: "
+                            f"x={center_x}, y={bottom_y}"
+                        )
 
-            people_count = len(results[0].boxes)
+
+
+            people_count = len(boxes) if boxes is not None else 0
 
             cv2.putText(
                 annotated_frame,
