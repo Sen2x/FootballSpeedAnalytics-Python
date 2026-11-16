@@ -5,6 +5,8 @@ tracking, distance covered, speed, heatmaps, player photos and a simple HTML rep
 
 Built with Python, OpenCV, Ultralytics YOLO26 and the BoT-SORT tracker.
 
+![Tracking demo: every player gets a track ID, spectators outside the field are ignored](docs/demo.gif)
+
 > **Honesty note.** Track IDs are tracking numbers, not real player identities.
 > Distances are only in meters when the field is calibrated, and only valid
 > while the camera does not move. If the scale is estimated, every output says so.
@@ -18,6 +20,18 @@ Built with Python, OpenCV, Ultralytics YOLO26 and the BoT-SORT tracker.
 | 3. Calibrate the field: pixels → meters (homography) | `src/calibrate.py` | `output/calibration.json`, `output/calibration_check.png` |
 | 4. Distance, average and max speed, heatmaps, trajectories | `src/analyze.py` | `output/stats.csv`, `output/players/player_N/*.png` |
 | 5. Player photos, team by shirt colour, HTML report | `src/report.py` | `output/report.html` |
+
+## Results
+
+The HTML report lets you pick a track ID and see its photo, distance, speed, heatmap and trajectory:
+
+![HTML report](docs/report.png)
+
+| Field calibration (yellow lines every 5 m) | Heatmap of one player |
+|---|---|
+| ![Calibration check](docs/calibration.jpg) | ![Heatmap](docs/heatmap.png) |
+
+*Demo clip: 7 seconds of drone footage. The field size here is estimated from average player height (about ±15%), so these meters are marked as estimated in every output.*
 
 ## How the measurements stay honest
 
@@ -52,9 +66,21 @@ python src/report.py       # then open output/report.html
 
 Settings (model, image size, field size, colours) are at the top of each script.
 
+## Tests
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The tests cover distance calculation, splitting tracks at gaps, median smoothing and the homography helper.
+
 ## Limitations
 
 - Works best with a fixed or hovering camera (e.g. a drone). A moving broadcast camera needs per-frame calibration, which is not implemented yet.
 - Players outside the camera view cannot be tracked.
 - Team detection by shirt colour uses hue ranges that must be adjusted for each match.
 - Referees on the field are labelled by colour only.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
