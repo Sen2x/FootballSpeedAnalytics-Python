@@ -4,5 +4,6 @@ __pycache__/
 
 videos/
 output/
+*.pt
 
 .env

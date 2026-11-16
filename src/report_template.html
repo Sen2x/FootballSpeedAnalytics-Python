@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Football Speed Analytics</title>
+<style>
+  body { margin: 0; font-family: Arial, sans-serif; background: #f2f4f3; color: #1d2b24; }
+  header { background: #1f5c3a; color: white; padding: 16px 24px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 6px 0 0; font-size: 13px; opacity: 0.85; }
+  .layout { display: flex; gap: 20px; padding: 20px 24px; align-items: flex-start; }
+  .list { width: 170px; flex-shrink: 0; }
+  .list button { display: block; width: 100%; margin-bottom: 6px; padding: 9px 12px; text-align: left;
+                 border: 1px solid #c9d3cd; background: white; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .list button.active { background: #1f5c3a; color: white; border-color: #1f5c3a; }
+  .card { flex: 1; background: white; border-radius: 10px; padding: 20px; border: 1px solid #dde3df; }
+  .top { display: flex; gap: 24px; flex-wrap: wrap; }
+  .photo { height: 300px; border-radius: 8px; border: 1px solid #dde3df; }
+  table { border-collapse: collapse; font-size: 15px; }
+  td { padding: 7px 14px 7px 0; border-bottom: 1px solid #eef1ef; }
+  td:first-child { color: #5d6b63; }
+  .team { font-size: 14px; font-weight: normal; background: #e6efe9; padding: 3px 10px; border-radius: 12px; margin-left: 8px; }
+  .list h3 { font-size: 13px; color: #5d6b63; margin: 14px 0 6px; }
+  .note { margin-top: 10px; font-size: 13px; color: #9a5b00; }
+  .images { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+  .images figure { margin: 0; }
+  .images img { max-width: 100%; border-radius: 6px; border: 1px solid #dde3df; }
+  figcaption { font-size: 13px; color: #5d6b63; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Football Speed Analytics</h1>
+  <p>CALIBRATION_NOTE Track IDs are tracking numbers, not real player identities.</p>
+</header>
+<div class="layout">
+  <div class="list" id="list"></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+  const players = PLAYERS_DATA;
+
+  function showPlayer(index) {
+    const p = players[index];
+    document.querySelectorAll(".list button").forEach(b => b.classList.toggle("active", b.dataset.index == index));
+    document.getElementById("card").innerHTML = `
+      <h2>Track ID ${p.id} <span class="team">${p.team}</span></h2>
+      <div class="top">
+        <img class="photo" src="${p.photo}" alt="Track ID ${p.id}">
+        <div>
+          <table>
+            <tr><td>Tracked time</td><td>${p.time}</td></tr>
+            <tr><td>Distance covered</td><td>${p.distance} m</td></tr>
+            <tr><td>Average speed</td><td>${p.avgSpeed} km/h</td></tr>
+            <tr><td>Maximum speed (1 s)</td><td>${p.maxSpeed} km/h</td></tr>
+            <tr><td>Tracking coverage</td><td>${p.coverage} %</td></tr>
+          </table>
+          ${p.note ? `<div class="note">${p.note}</div>` : ""}
+        </div>
+      </div>
+      <div class="images">
+        <figure><figcaption>Heatmap</figcaption><img src="${p.heatmap}"></figure>
+        <figure><figcaption>Trajectory</figcaption><img src="${p.trajectory}"></figure>
+      </div>
+      <div class="images">
+        <figure><figcaption>Frame from the video</figcaption><img src="${p.frame}"></figure>
+      </div>`;
+  }
+
+  const list = document.getElementById("list");
+  const teamNames = [...new Set(players.map(p => p.team))].sort();
+  teamNames.forEach(team => {
+    const title = document.createElement("h3");
+    title.textContent = team;
+    list.appendChild(title);
+    players.forEach((p, i) => {
+      if (p.team !== team) return;
+      const button = document.createElement("button");
+      button.textContent = `Player ${p.id}  ·  ${p.distance} m`;
+      button.dataset.index = i;
+      button.onclick = () => showPlayer(i);
+      list.appendChild(button);
+    });
+  });
+  if (players.length > 0) showPlayer(0);
+</script>
+</body>
+</html>
